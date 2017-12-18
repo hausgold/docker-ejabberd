@@ -15,7 +15,7 @@ CONTAINER_URI ?= $(CONTAINER_REGISTRY)$(CONTAINER_NAME)
 CONTAINER_URI_DEV ?= $(CONTAINER_URI):dev
 
 all:
-	# mDNS enabled rroemhild/ejabberd
+	# mDNS enabled ejabberd
 	#
 	# build          Build a development snapshot of the image
 	#
