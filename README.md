@@ -4,8 +4,8 @@ This Docker images provides the [ejabberd](https://www.ejabberd.im/) as an
 development image with the mDNS/ZeroConf stack on top. So you can enjoy the
 ejabberd service while it is accessible by default as *ejabberd.local*.
 
-**Heads up!** This image did dedicated to your development environment. Do not
-run it on production!
+**Heads up!** This image is dedicated to your development environment.
+Do not run it on production!
 
 ## Requirements
 
@@ -71,7 +71,7 @@ This will result in *something.else.local*.
 By default *.local* is the default mDNS top level domain. This images does not
 force you to use it. But if you do not use the default *.local* top level
 domain, you need to [configure your host avahi
-configuration](https://wiki.archlinux.org/index.php/avahi#Configuring_mDNS_for_custom_TLD)
+](https://wiki.archlinux.org/index.php/avahi#Configuring_mDNS_for_custom_TLD)
 to accept it.
 
 ## Further reading
