@@ -10,7 +10,7 @@ RUN apt-get update -yqqq && \
     avahi-daemon avahi-discover avahi-utils \
     libnss-mdns haproxy supervisor \
     ejabberd ejabberd-contrib ejabberd-contrib \
-    erlang-p1-mysql erlang-p1-pgsql erlang-p1-sqlite3
+    erlang-p1-mysql erlang-p1-pgsql erlang-sqlite3
 
 # Copy avahi.sh
 COPY config/avahi.sh /usr/local/bin/
