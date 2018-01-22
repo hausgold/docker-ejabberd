@@ -8,7 +8,9 @@ ENV MDNS_HOSTNAME=ejabberd.local
 RUN apt-get update -yqqq && \
   apt-get install -y \
     avahi-daemon avahi-discover avahi-utils \
-    libnss-mdns haproxy supervisor ejabberd ejabberd-contrib
+    libnss-mdns haproxy supervisor \
+    ejabberd ejabberd-contrib ejabberd-contrib \
+    erlang-p1-mysql erlang-p1-pgsql erlang-p1-sqlite3
 
 # Copy avahi.sh
 COPY config/avahi.sh /usr/local/bin/
