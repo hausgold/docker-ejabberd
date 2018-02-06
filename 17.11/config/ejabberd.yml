@@ -686,6 +686,7 @@ modules:
       allow_subscription: true
       persistent: true
       mam: true
+      anonymous: false
   mod_muc_admin: {}
   ## mod_muc_log: {}
   ## mod_multicast: {}
