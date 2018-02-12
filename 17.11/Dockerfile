@@ -2,7 +2,9 @@ FROM ubuntu:18.04
 MAINTAINER Hermann Mayer "hermann.mayer92@gmail.com"
 
 # You can change this environment variable on run's with -e
-ENV MDNS_HOSTNAME=ejabberd.local
+ENV \
+  DEBIAN_FRONTEND="noninteractive" \
+  MDNS_HOSTNAME="ejabberd.local"
 
 # Install system packages
 RUN apt-get update -yqqq && \
