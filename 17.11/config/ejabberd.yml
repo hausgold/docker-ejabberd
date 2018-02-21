@@ -517,16 +517,16 @@ access_rules:
   ## Only admins can use the configuration interface:
   configure:
     - allow: admin
-  ## Only accounts of the local ejabberd server can create rooms:
-  muc_create:
-    - allow: local
+  ## Only admin accounts can create rooms:
+  muc_admin:
+    - allow: admin
   ## Only accounts on the local ejabberd server can create Pubsub nodes:
   pubsub_createnode:
     - allow: local
   ## In-band registration allows registration of any possible username.
   ## To disable in-band registration, replace 'allow' with 'deny'.
   register:
-    - allow
+    - deny
   ## Only allow to register from localhost
   trusted_network:
     - allow: loopback
@@ -582,7 +582,6 @@ api_permissions:
       - ip: "127.0.0.1/8"
     what:
       - "status"
-      - "connected_users_number"
 
 ## By default the frequency of account registrations from the same IP
 ## is limited to 1 account every 10 minutes. To disable, specify: infinity
@@ -669,18 +668,17 @@ modules:
   ## limited to 2GB which might be exceeded on large servers
   ## mod_mam: {} # for xep0313, mnesia is limited to 2GB, better use an SQL backend
   mod_mam:
-    request_activates_archiving: true
+    request_activates_archiving: false
     iqdisc: one_queue
     default: always
     db_type: mnesia
   mod_muc:
     ## host: "conference.@HOST@"
     access:
-      - allow
-    access_admin:
-      - allow: admin
-    access_create: muc_create
-    access_persistent: muc_create
+      - local
+    access_admin: muc_admin
+    access_create: muc_admin
+    access_persistent: muc_admin
     ## Rooms should be persistent by default
     default_room_options:
       allow_subscription: true
