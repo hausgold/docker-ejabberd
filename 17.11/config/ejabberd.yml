@@ -90,19 +90,44 @@ hosts:
 ##
 ## route_subdomains: s2s
 
-###.  ===============
-###'  LISTENING PORTS
+###.  ============
+###'  Certificates
 
-## Define common macros used by listeners
+## List all available PEM files containing certificates for your domains,
+## chains of certificates or certificate keys. Full chains will be built
+## automatically by ejabberd.
+##
+certfiles:
+  - "/etc/ejabberd/ejabberd.pem"
+
+## If your system provides only a single CA file (CentOS/FreeBSD):
+## ca_file: "/etc/ssl/certs/ca-bundle.pem"
+
+###.  =================
+###'  TLS configuration
+
+## Note that the following configuration is the default
+## configuration of the TLS driver, so you don't need to
+## uncomment it.
+##
 define_macro:
-  'CERTFILE': "/etc/ejabberd/ejabberd.pem"
-##  'CIPHERS': "ECDH:DH:!3DES:!aNULL:!eNULL:!MEDIUM@STRENGTH"
-  'TLSOPTS':
+  'TLS_CIPHERS': "HIGH:!aNULL:!eNULL:!3DES:@STRENGTH"
+  'TLS_OPTIONS':
     - "no_sslv3"
     - "no_tlsv1"
     - "cipher_server_preference"
     - "no_compression"
-##  'DHFILE': "/path/to/dhparams.pem" # generated with: openssl dhparam -out dhparams.pem 2048
+  ## 'DH_FILE': "/path/to/dhparams.pem" # generated with: openssl dhparam -out dhparams.pem 2048
+
+## c2s_dhfile: 'DH_FILE'
+## s2s_dhfile: 'DH_FILE'
+c2s_ciphers: 'TLS_CIPHERS'
+s2s_ciphers: 'TLS_CIPHERS'
+c2s_protocol_options: 'TLS_OPTIONS'
+s2s_protocol_options: 'TLS_OPTIONS'
+
+###.  ===============
+###'  LISTENING PORTS
 
 ##
 ## listen: The ports ejabberd will listen on, which service each is handled
@@ -114,14 +139,10 @@ listen:
     ip: "::"
     module: ejabberd_c2s
     starttls_required: true
-    certfile: 'CERTFILE'
-    protocol_options: 'TLSOPTS'
-    ## dhfile: 'DHFILE'
-    ## ciphers: 'CIPHERS'
+    protocol_options: 'TLS_OPTIONS'
     max_stanza_size: 65536
     shaper: c2s_shaper
     access: c2s
-    resend_on_timeout: if_offline
   -
     port: 5269
     ip: "::"
@@ -138,9 +159,9 @@ listen:
     web_admin: true
     ## register: true
     ## captcha: true
-    tls: false
-    certfile: 'CERTFILE'
-    protocol_options: 'TLSOPTS'
+    tls: true
+    protocol_options: 'TLS_OPTIONS'
+
   ##
   ## ejabberd_service: Interact with external components (transports, ...)
   ##
@@ -181,7 +202,12 @@ listen:
   ##   port: 4560
   ##   ip: "::"
   ##   module: ejabberd_xmlrpc
-  ##   access_commands: {}
+  ##   maxsessions: 10
+  ##   timeout: 5000
+  ##   access_commands:
+  ##     admin:
+  ##       commands: all
+  ##       options: []
 
   ##
   ## To enable secure http upload
@@ -193,10 +219,9 @@ listen:
   ##   request_handlers:
   ##     "": mod_http_upload
   ##   tls: true
-  ##   certfile: 'CERTFILE'
-  ##   protocol_options: 'TLSOPTS'
-  ##   dhfile: 'DHFILE'
-  ##   ciphers: 'CIPHERS'
+  ##   protocol_options: 'TLS_OPTIONS'
+  ##   dhfile: 'DH_FILE'
+  ##   ciphers: 'TLS_CIPHERS'
 
 ## Disabling digest-md5 SASL authentication. digest-md5 requires plain-text
 ## password storage (see auth_password_format option).
@@ -207,28 +232,10 @@ disable_sasl_mechanisms: "digest-md5"
 
 ##
 ## s2s_use_starttls: Enable STARTTLS for S2S connections.
-## Allowed values are: false optional required required_trusted
-## You must specify a certificate file.
+## Allowed values are: false, optional or required
+## You must specify 'certfiles' option
 ##
 s2s_use_starttls: required
-
-##
-## s2s_certfile: Specify a certificate file.
-##
-s2s_certfile: 'CERTFILE'
-
-## Custom OpenSSL options
-##
-s2s_protocol_options: 'TLSOPTS'
-
-##
-## domain_certfile: Specify a different certificate for each served hostname.
-##
-## host_config:
-##   "example.org":
-##     domain_certfile: "/path/to/example_org.pem"
-##   "example.com":
-##     domain_certfile: "/path/to/example_com.pem"
 
 ##
 ## S2S whitelist or blacklist
@@ -418,7 +425,7 @@ shaper:
 ## This option specifies the maximum number of elements in the queue
 ## of the FSM. Refer to the documentation for details.
 ##
-max_fsm_queue: 1000
+max_fsm_queue: 10000
 
 ###.   ====================
 ###'   ACCESS CONTROL LISTS
@@ -530,14 +537,14 @@ access_rules:
   ## Only allow to register from localhost
   trusted_network:
     - allow: loopback
-  ## Do not establish S2S connections with bad servers
-  ## If you enable this you also have to uncomment "s2s_access: s2s"
-  ## s2s:
-  ##   - deny:
-  ##     - ip: "XXX.XXX.XXX.XXX/32"
-  ##   - deny:
-  ##     - ip: "XXX.XXX.XXX.XXX/32"
-  ##   - allow
+    ## Do not establish S2S connections with bad servers
+    ## If you enable this you also have to uncomment "s2s_access: s2s"
+    ## s2s:
+    ##   - deny:
+    ##     - ip: "XXX.XXX.XXX.XXX/32"
+    ##   - deny:
+    ##     - ip: "XXX.XXX.XXX.XXX/32"
+    ##   - allow
 
 ## ===============
 ## API PERMISSIONS
@@ -567,11 +574,13 @@ api_permissions:
     who:
       - access:
         - allow:
+          - acl: loopback
           - acl: admin
       - oauth:
         - scope: "ejabberd:admin"
         - access:
           - allow:
+            - acl: loopback
             - acl: admin
     what:
       - "*"
@@ -633,6 +642,36 @@ language: "en"
 ##
 ## captcha_limit: 5
 
+###.  ====
+###'  ACME
+##
+## In order to use the acme certificate acquiring through "Let's Encrypt"
+## an http listener has to be configured to listen to port 80 so that
+## the authorization challenges posed by "Let's Encrypt" can be solved.
+##
+## A simple way of doing this would be to add the following in the listening
+## section and to configure port forwarding from 80 to 5281 either via NAT
+## (for ipv4 only) or using frontends such as haproxy/nginx/sslh/etc.
+##   -
+##    port: 5281
+##    ip: "::"
+##    module: ejabberd_http
+
+acme:
+
+  ## A contact mail that the ACME Certificate Authority can contact in case of
+  ## an authorization issue, such as a server-initiated certificate revocation.
+  ## It is not mandatory to provide an email address but it is highly suggested.
+  contact: "mailto:example-admin@example.com"
+
+
+  ## The ACME Certificate Authority URL.
+  ## This could either be:
+  ##   - https://acme-v01.api.letsencrypt.org - (Default) for the production CA
+  ##   - https://acme-staging.api.letsencrypt.org - for the staging CA
+  ##   - http://localhost:4000 - for a local version of the CA
+  ca_url: "https://acme-v01.api.letsencrypt.org"
+
 ###.  =======
 ###'  MODULES
 
@@ -642,14 +681,14 @@ language: "en"
 modules:
   mod_adhoc: {}
   mod_admin_extra: {}
-  mod_announce: # recommends mod_adhoc
+  mod_announce:   # recommends mod_adhoc
     access: announce
-  mod_blocking: {} # requires mod_privacy
+  mod_blocking: {}   # requires mod_privacy
   mod_caps: {}
   mod_carboncopy: {}
   mod_client_state: {}
-  mod_configure: {} # requires mod_adhoc
-  ## mod_delegation: {} # for xep0356
+  mod_configure: {}   # requires mod_adhoc
+  ## mod_delegation: {}   # for xep0356
   mod_disco: {}
   mod_echo: {}
   mod_irc: {}
@@ -668,11 +707,6 @@ modules:
   ## You might want to setup a SQL backend for MAM because the mnesia database is
   ## limited to 2GB which might be exceeded on large servers
   ## mod_mam: {} # for xep0313, mnesia is limited to 2GB, better use an SQL backend
-  mod_mam:
-    request_activates_archiving: true
-    iqdisc: one_queue
-    default: always
-    db_type: mnesia
   mod_muc:
     ## host: "conference.@HOST@"
     access:
@@ -681,12 +715,6 @@ modules:
       - allow: admin
     access_create: muc_create
     access_persistent: muc_create
-    ## Rooms should be persistent by default
-    default_room_options:
-      allow_subscription: true
-      persistent: true
-      mam: true
-      anonymous: false
   mod_muc_admin: {}
   ## mod_muc_log: {}
   ## mod_multicast: {}
@@ -709,42 +737,42 @@ modules:
     plugins:
       - "flat"
       - "hometree"
-      - "pep" # pep requires mod_caps
+      - "pep"   # pep requires mod_caps
   mod_push: {}
   mod_push_keepalive: {}
   ## mod_register:
-    ##
-    ## Protect In-Band account registrations with CAPTCHA.
-    ##
-    ##   captcha_protected: true
-    ##
-    ## Set the minimum informational entropy for passwords.
-    ##
-    ##   password_strength: 32
-    ##
-    ## After successful registration, the user receives
-    ## a message with this subject and body.
-    ##
-    ##   welcome_message:
-    ##     subject: "Welcome!"
-    ##     body: |-
-    ##       Hi.
-    ##       Welcome to this XMPP server.
-    ##
-    ## When a user registers, send a notification to
-    ## these XMPP accounts.
-    ##
-    ##   registration_watchers:
-    ##     - "admin1@example.org"
-    ##
-    ## Only clients in the server machine can register accounts
-    ##
-    ##   ip_access: trusted_network
-    ##
-    ## Local c2s or remote s2s users cannot register accounts
-    ##
-    ##   access_from: deny
-    ##   access: register
+  ##
+  ## Protect In-Band account registrations with CAPTCHA.
+  ##
+  ##   captcha_protected: true
+  ##
+  ## Set the minimum informational entropy for passwords.
+  ##
+  ##   password_strength: 32
+  ##
+  ## After successful registration, the user receives
+  ## a message with this subject and body.
+  ##
+  ##   welcome_message:
+  ##     subject: "Welcome!"
+  ##     body: |-
+  ##       Hi.
+  ##       Welcome to this XMPP server.
+  ##
+  ## When a user registers, send a notification to
+  ## these XMPP accounts.
+  ##
+  ##   registration_watchers:
+  ##     - "admin1@example.org"
+  ##
+  ## Only clients in the server machine can register accounts
+  ##
+  ##   ip_access: trusted_network
+  ##
+  ## Local c2s or remote s2s users cannot register accounts
+  ##
+  ##   access_from: deny
+  ##   access: register
   mod_roster:
     versioning: true
   mod_shared_roster: {}
@@ -752,8 +780,14 @@ modules:
   mod_time: {}
   mod_vcard:
     search: false
+  mod_vcard_xupdate: {}
+  ## Convert all avatars posted by Android clients from WebP to JPEG
+  ## mod_avatar:  # this module needs compile option --enable-graphics
+  ##   convert:
+  ##     webp: jpeg
   mod_version: {}
-  mod_stream_mgmt: {}
+  mod_stream_mgmt:
+    resend_on_timeout: if_offline
   ##   Non-SASL Authentication (XEP-0078) is now disabled by default
   ##   because it's obsoleted and is used mostly by abandoned
   ##   client software
@@ -762,7 +796,7 @@ modules:
   ##   rely solely on dialback if you want to federate with other servers,
   ##   because a lot of servers have dialback disabled and instead rely on
   ##   PKIX authentication. Make sure you have proper certificates installed
-  ##   and check your accessibility at https://xmpp.net/
+  ##   and check your accessibility at https://check.messaging.one/
   mod_s2s_dialback: {}
   mod_http_api: {}
 
