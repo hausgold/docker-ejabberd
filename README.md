@@ -1,11 +1,22 @@
 ![mDNS enabled ejabberd](https://raw.githubusercontent.com/hausgold/docker-ejabberd/master/docs/assets/project.png)
 
+[![Source Code](https://img.shields.io/badge/source-on%20github-blue.svg)](https://github.com/hausgold/docker-ejabberd)
+[![Docker Image](https://img.shields.io/badge/image-on%20docker%20hub-blue.svg)](https://hub.docker.com/r/hausgold/ejabberd/)
+
 This Docker images provides the [ejabberd](https://www.ejabberd.im/) as an development image
 with the mDNS/ZeroConf stack on top. So you can enjoy the ejabberd service
 while it is accessible by default as *ejabberd.local*.
 
 **Heads up!** This image is dedicated to your development environment.
 Do not run it on production!
+
+- [Requirements](#requirements)
+- [Getting starting](#getting-starting)
+- [docker-compose usage example](#docker-compose-usage-example)
+- [Host configs](#host-configs)
+- [Configure a different mDNS hostname](#configure-a-different-mdns-hostname)
+- [Other top level domains](#other-top-level-domains)
+- [Further reading](#further-reading)
 
 ## Requirements
 
