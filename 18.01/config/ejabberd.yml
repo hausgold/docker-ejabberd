@@ -716,6 +716,10 @@ modules:
       - allow: admin
     access_create: muc_create
     access_persistent: muc_create
+    default_room_options:
+      allow_subscription: true
+      persistent: true
+      mam: true
   mod_muc_admin: {}
   ## mod_muc_log: {}
   ## mod_multicast: {}
