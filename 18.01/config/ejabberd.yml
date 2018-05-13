@@ -138,7 +138,7 @@ listen:
     port: 5222
     ip: "::"
     module: ejabberd_c2s
-    starttls_required: true
+    starttls_required: false
     protocol_options: 'TLS_OPTIONS'
     max_stanza_size: 65536
     shaper: c2s_shaper
@@ -157,9 +157,10 @@ listen:
       "/api": mod_http_api
     ##  "/pub/archive": mod_http_fileserver
     web_admin: true
+    trusted_proxies: all
     ## register: true
     ## captcha: true
-    tls: true
+    tls: false
     protocol_options: 'TLS_OPTIONS'
 
   ##
