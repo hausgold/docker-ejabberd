@@ -9,7 +9,7 @@ ENV \
 # Install system packages
 RUN apt-get update -yqqq && \
   apt-get install -y \
-    avahi-daemon avahi-discover avahi-utils \
+    dbus avahi-daemon avahi-utils \
     libnss-mdns haproxy supervisor \
     ejabberd ejabberd-contrib ejabberd-contrib \
     erlang-p1-mysql erlang-p1-pgsql erlang-sqlite3
