@@ -27,6 +27,7 @@ COPY config/haproxy.conf /etc/haproxy/haproxy.cfg
 
 # Configure supervisord
 COPY config/supervisor/* /etc/supervisor/conf.d/
+RUN mkdir -p /var/log/supervisor
 
 # Configure ejabberd
 COPY config/ejabberd.yml /etc/ejabberd/ejabberd.yml
