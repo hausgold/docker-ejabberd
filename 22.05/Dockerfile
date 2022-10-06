@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.10
 MAINTAINER Hermann Mayer "hermann.mayer92@gmail.com"
 
 # You can change this environment variable on run's with -e
@@ -10,9 +10,13 @@ ENV \
 RUN apt-get update -yqqq && \
   apt-get install -y \
     avahi-daemon avahi-discover avahi-utils \
-    libnss-mdns haproxy supervisor \
+    libnss-mdns haproxy supervisor locales \
     ejabberd ejabberd-contrib \
-    erlang-p1-mysql erlang-p1-pgsql erlang-p1-sqlite3
+    erlang-p1-mysql erlang-p1-pgsql erlang-p1-sqlite3 erlang-redis-client && \
+  localedef -i en_US -c -f UTF-8 -A \
+    /usr/share/locale/locale.alias en_US.UTF-8 && \
+  rm -rf /var/lib/apt/lists/*
+ENV LANG en_US.utf8
 
 # Copy avahi.sh
 COPY config/avahi.sh /usr/local/bin/
