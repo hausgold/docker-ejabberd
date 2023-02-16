@@ -18,13 +18,9 @@ RUN apt-get update -yqqq && \
   rm -rf /var/lib/apt/lists/*
 ENV LANG en_US.utf8
 
-# Copy avahi.sh
-COPY config/avahi.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/avahi.sh
-
-# Copy ejabberd.sh
-COPY config/ejabberd.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/ejabberd.sh
+# Copy custom scripts
+COPY config/*.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/*
 
 # Configure haproxy
 COPY config/haproxy.conf /etc/haproxy/haproxy.cfg
