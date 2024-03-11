@@ -7,7 +7,9 @@ ENV \
   MDNS_HOSTNAME="ejabberd.local"
 
 # Install system packages
-RUN apt-get update -yqqq && \
+RUN sed -i 's/\(archive\|security\).ubuntu.com/old-releases.ubuntu.com/g' \
+  /etc/apt/sources.list && \
+  apt-get update -yqqq && \
   apt-get install -y \
     avahi-daemon avahi-discover avahi-utils \
     libnss-mdns haproxy supervisor locales \
