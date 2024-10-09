@@ -1,5 +1,5 @@
 FROM ubuntu:18.04
-MAINTAINER Hermann Mayer "hermann.mayer92@gmail.com"
+LABEL org.opencontainers.image.authors="containers@hausgold.de"
 
 # You can change this environment variable on run's with -e
 ENV \
@@ -29,4 +29,4 @@ RUN mkdir -p /var/log/supervisor
 COPY config/ejabberd.yml /etc/ejabberd/ejabberd.yml
 
 # Define the command to run per default
-CMD /usr/bin/supervisord -nc /etc/supervisor/supervisord.conf
+CMD ["/usr/bin/supervisord", "-nc", "/etc/supervisor/supervisord.conf"]
