@@ -43,19 +43,12 @@ The admin user is **admin@MDNS_HOSTNAME**, so by default it is
 ## docker-compose usage example
 
 ```yaml
-ejabberd:
-  image: hausgold/ejabberd
-  environment:
-    # Mind the .local suffix
-    - MDNS_HOSTNAME=ejabberd.test.local
-  ports:
-    # The ports are just for you to know when configure your
-    # container links, on depended containers
-    - "4560" # (XMLRPC)
-    - "5222" # (Client 2 Server)
-    - "5269" # (Server 2 Server)
-    - "5280" # (HTTP admin/websocket/http-bind)
-    - "5443" # (HTTP Upload)
+services:
+  ejabberd:
+    image: hausgold/ejabberd
+    environment:
+      # Mind the .local suffix
+      MDNS_HOSTNAME: ejabberd.test.local
 ```
 
 ## Host configs
