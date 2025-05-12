@@ -1,4 +1,4 @@
-![mDNS enabled ejabberd](https://raw.githubusercontent.com/hausgold/docker-ejabberd/master/docs/assets/project.png)
+![mDNS enabled ejabberd](https://raw.githubusercontent.com/hausgold/docker-ejabberd/master/docs/assets/project.svg)
 
 [![Continuous Integration](https://github.com/hausgold/docker-ejabberd/actions/workflows/package.yml/badge.svg?branch=master)](https://github.com/hausgold/docker-ejabberd/actions/workflows/package.yml)
 [![Source Code](https://img.shields.io/badge/source-on%20github-blue.svg)](https://github.com/hausgold/docker-ejabberd)
