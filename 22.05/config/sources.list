@@ -14,6 +14,14 @@ deb http://old-releases.ubuntu.com/ubuntu kinetic multiverse
 deb http://old-releases.ubuntu.com/ubuntu kinetic-updates multiverse
 deb http://old-releases.ubuntu.com/ubuntu kinetic-backports main restricted universe multiverse
 
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic main restricted
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic-updates main restricted
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic universe
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic-updates universe
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic-updates multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic-backports main restricted universe multiverse
+
 # Original sources: (quite slow)
 # deb http://security.ubuntu.com/ubuntu/ kinetic-security main restricted
 # deb http://security.ubuntu.com/ubuntu/ kinetic-security universe
@@ -21,3 +29,7 @@ deb http://old-releases.ubuntu.com/ubuntu kinetic-backports main restricted univ
 deb http://old-releases.ubuntu.com/ubuntu kinetic-security main restricted
 deb http://old-releases.ubuntu.com/ubuntu kinetic-security universe
 deb http://old-releases.ubuntu.com/ubuntu kinetic-security multiverse
+
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic-security main restricted
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic-security universe
+deb-src http://old-releases.ubuntu.com/ubuntu kinetic-security multiverse
