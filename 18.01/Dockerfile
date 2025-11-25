@@ -7,6 +7,7 @@ ENV \
   MDNS_HOSTNAME="ejabberd.local"
 
 # Install system packages
+COPY config/sources.list /etc/apt/sources.list
 RUN apt-get update -yqqq && \
   apt-get install -y \
     avahi-daemon avahi-discover avahi-utils \

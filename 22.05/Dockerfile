@@ -7,9 +7,8 @@ ENV \
   MDNS_HOSTNAME="ejabberd.local"
 
 # Install system packages
-RUN sed -i 's/\(archive\|security\).ubuntu.com/old-releases.ubuntu.com/g' \
-  /etc/apt/sources.list && \
-  apt-get update -yqqq && \
+COPY config/sources.list /etc/apt/sources.list
+RUN apt-get update -yqqq && \
   apt-get install -y \
     avahi-daemon avahi-discover avahi-utils \
     libnss-mdns haproxy supervisor locales \
@@ -18,7 +17,7 @@ RUN sed -i 's/\(archive\|security\).ubuntu.com/old-releases.ubuntu.com/g' \
   localedef -i en_US -c -f UTF-8 -A \
     /usr/share/locale/locale.alias en_US.UTF-8 && \
   rm -rf /var/lib/apt/lists/*
-ENV LANG en_US.utf8
+ENV LANG=en_US.utf8
 
 # Copy custom scripts
 COPY config/*.sh /usr/local/bin/
