@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+PROGNAME="$(basename "${0}")"
+
+# Print the usage of the script.
+function help()
+{
+  cat <<EOF
+Usage: ${PROGNAME} IMAGE [NAME]
+
+Run the smoke test on a built Docker image. The image is started with
+its default configuration, next to a second container of the same image
+which acts as the client. The client looks the server up via mDNS, opens
+a XMPP stream to it and logs in to the admin panel with the default
+credentials, directly and through the proxy. NAME prefixes the
+containers and names the network of the test run, it defaults to
+ejabberd-test.
+
+Eg. ${0} hausgold/ejabberd:latest
+EOF
+}
+
+if [ -z "${1:-}" -o "${1:-}" = '-h' -o "${1:-}" = '--help' ]; then
+  help
+  exit 0
+fi
+
+# Print an error message and the usage to stderr, then exit.
+#
+# $1 - the error message
+function panic()
+{
+  >&2 echo "${PROGNAME}: ${1}"
+  >&2 echo -e '\n---\n'
+  >&2 help
+  exit 1
+}
+
+command -v docker >/dev/null || panic 'docker: command not found'
+
+# The Docker image to test
+IMAGE="${1}"
+# The name prefix of the containers, and the name of the network
+NAME="${2:-ejabberd-test}"
+# The container which runs the default configuration
+SERVER="${NAME}-server"
+# The container which looks up and connects to the server
+CLIENT="${NAME}-client"
+# We use a dedicated network, so that containers of other projects cannot
+# claim the mDNS hostname of the server on the default bridge
+NETWORK="${NAME}"
+# The defaults of the image, as documented on the readme
+MDNS_HOSTNAME='ejabberd.local'
+ADMIN_USER='admin'
+ADMIN_PASSWORD='defaultpw'
+# The HTTP port, and the proxy port in front of it
+PORTS=(5280 80)
+# The seconds we wait for the server startup, the registration of the
+# admin user, and for the mDNS lookup
+TIMEOUT=120
+
+# Remove the containers and the network of the test run.
+function cleanup()
+{
+  docker rm --force --volumes "${SERVER}" "${CLIENT}" >/dev/null 2>&1 || true
+  docker network rm "${NETWORK}" >/dev/null 2>&1 || true
+}
+
+# Print the failed check together with the latest server logs to stderr,
+# then exit.
+#
+# $1 - the description of the failed check
+function fail()
+{
+  >&2 echo "${PROGNAME}: ${1}"
+  >&2 echo -e '\n---\n'
+  >&2 docker logs --tail 50 "${SERVER}" || true
+  exit 1
+}
+
+# Retry a command every second until it succeeds, or the timeout is
+# reached.
+#
+# $1 - the timeout in seconds
+# $@ - the command to run
+function wait-for()
+{
+  local deadline=$((SECONDS + ${1}))
+  shift
+
+  until "${@}" >/dev/null 2>&1; do
+    [ "${SECONDS}" -lt "${deadline}" ] || return 1
+    sleep 1
+  done
+}
+
+# Check whether ejabberd is running on the server.
+function server-ready()
+{
+  docker exec "${SERVER}" ejabberdctl status
+}
+
+# Check whether the admin user is registered on the server. This happens
+# after the startup, so the server is ready before the user exists.
+function admin-registered()
+{
+  docker exec "${SERVER}" \
+    ejabberdctl check_account "${ADMIN_USER}" "${MDNS_HOSTNAME}"
+}
+
+# Check whether the client resolves the mDNS hostname to the address of
+# the server. We ask avahi directly, so no other name service can answer.
+function mdns-resolves()
+{
+  local address
+  address="$(
+    docker exec "${CLIENT}" avahi-resolve-host-name -4 "${MDNS_HOSTNAME}" \
+      | cut -f2
+  )"
+  [ "${address}" = "${SERVER_ADDRESS}" ]
+}
+
+# Print the stream header which the server answers on its XMPP client
+# port. The image ships no XMPP client, so we speak the protocol with the
+# network redirections of bash.
+#
+# $1 - the container which opens the stream
+# $2 - the host of the server
+function stream-header()
+{
+  docker exec -i "${1}" timeout 15 bash -s -- "${2}" <<'BASH'
+set -euo pipefail
+
+exec 3<>"/dev/tcp/${1}/5222"
+printf '%s' \
+  "<?xml version='1.0'?>" \
+  "<stream:stream to='${1}' version='1.0' xmlns='jabber:client'" \
+  " xmlns:stream='http://etherx.jabber.org/streams'>" >&3
+
+# The answer has no line breaks, so we read it tag by tag
+while read -r -t 10 -d '>' TAG <&3; do
+  if [[ "${TAG}" =~ stream:stream ]]; then
+    echo "${TAG}"
+    exit 0
+  fi
+done
+
+exit 1
+BASH
+}
+
+# Print the status code of a HTTP request with basic authentication. The
+# image ships no HTTP client, so we speak the protocol with the network
+# redirections of bash.
+#
+# $1 - the container which sends the request
+# $2 - the host of the server
+# $3 - the port of the server
+# $4 - the path to request
+# $5 - the credentials, as user:password
+function http-status()
+{
+  docker exec -i "${1}" timeout 15 \
+    bash -s -- "${2}" "${3}" "${4}" "${5}" <<'BASH'
+set -euo pipefail
+
+exec 3<>"/dev/tcp/${1}/${2}"
+printf 'GET %s HTTP/1.0\r\nHost: %s\r\nAuthorization: Basic %s\r\n\r\n' \
+  "${3}" "${1}" "$(printf '%s' "${4}" | base64 -w0)" >&3
+
+# The status line reads like "HTTP/1.1 200 OK"
+read -r -t 10 _ STATUS _ <&3
+echo "${STATUS}"
+BASH
+}
+
+# Drop the leftovers of an aborted run, and clean up after this one
+cleanup
+trap cleanup EXIT
+
+echo "Start ${IMAGE} with the default configuration"
+docker network create "${NETWORK}" >/dev/null
+docker run --detach --name "${SERVER}" --network "${NETWORK}" \
+  "${IMAGE}" >/dev/null
+wait-for "${TIMEOUT}" server-ready \
+  || fail 'The server did not start'
+
+echo "Wait for the registration of ${ADMIN_USER}@${MDNS_HOSTNAME}"
+wait-for "${TIMEOUT}" admin-registered \
+  || fail 'The default admin user was not registered'
+
+echo "Look up ${MDNS_HOSTNAME} via mDNS"
+# The client needs its own mDNS hostname, otherwise both containers
+# would claim the default one
+docker run --detach --name "${CLIENT}" --network "${NETWORK}" \
+  --env MDNS_HOSTNAME="${CLIENT}.local" "${IMAGE}" >/dev/null
+SERVER_ADDRESS="$(docker inspect "${SERVER}" \
+  --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')"
+wait-for "${TIMEOUT}" mdns-resolves \
+  || fail "${MDNS_HOSTNAME} did not resolve to ${SERVER_ADDRESS}"
+
+echo "Open a XMPP stream to ${MDNS_HOSTNAME} on port 5222"
+HEADER="$(stream-header "${CLIENT}" "${MDNS_HOSTNAME}")" \
+  || fail 'The client could not open a XMPP stream to the server'
+# The server names the host it serves, which must be the mDNS hostname
+[[ "${HEADER}" =~ from=.${MDNS_HOSTNAME}. ]] \
+  || fail "The server answered with an unexpected stream: ${HEADER}"
+
+for PORT in "${PORTS[@]}"; do
+  echo "Log in to the admin panel of ${MDNS_HOSTNAME} on port ${PORT}"
+  STATUS="$(
+    http-status "${CLIENT}" "${MDNS_HOSTNAME}" "${PORT}" '/admin/' \
+      "${ADMIN_USER}@${MDNS_HOSTNAME}:${ADMIN_PASSWORD}"
+  )" || fail "The client could not connect to the server on port ${PORT}"
+  [ "${STATUS}" = '200' ] \
+    || fail "Port ${PORT} answered the login with the status ${STATUS}"
+done
+
+# Without this the logins above prove nothing about the password
+STATUS="$(
+  http-status "${CLIENT}" "${MDNS_HOSTNAME}" "${PORTS[0]}" '/admin/' \
+    "${ADMIN_USER}@${MDNS_HOSTNAME}:wrong"
+)" || fail 'The client could not connect to the server'
+[ "${STATUS}" = '401' ] \
+  || fail "The server answered a wrong password with the status ${STATUS}"
+
+echo 'All checks passed'
